@@ -1,10 +1,10 @@
 all: main
 
 main: server.o
-	g++ server.o -o messenger-app-server -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
+	g++ server.o -o messenger-app-server -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network -lpqxx -lpq -std=c++17
 
 server.o: server.cpp
-	g++ -c server.cpp
+	g++ -c server.cpp -std=c++17
 
 clean:
 	rm -rf *.o
