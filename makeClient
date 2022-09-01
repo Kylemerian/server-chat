@@ -1,0 +1,10 @@
+all: main
+
+main: client.o
+	g++ client.o -o messenger-app-client -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
+
+client.o: client.cpp
+	g++ -c client.cpp
+
+clean:
+	rm -rf *.o

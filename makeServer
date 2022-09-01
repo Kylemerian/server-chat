@@ -1,0 +1,10 @@
+all: main
+
+main: server.o
+	g++ server.o -o messenger-app-server -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
+
+server.o: server.cpp
+	g++ -c server.cpp
+
+clean:
+	rm -rf *.o
