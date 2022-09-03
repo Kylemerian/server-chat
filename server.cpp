@@ -20,9 +20,9 @@ public:
         /*pqxx::result r = w.exec("SELECT * from clients where client_id = 1;");
         w.commit();
         std::cout << r[0][0].c_str() << r[0][1].c_str() << r[0][2].c_str() << r[0][3].c_str() << std::endl;*/
-        //  message(2, 3, "mess", "\'2010-10-10 00:00:00\'");
+        //message(2, 3, "mess", "\'2010-10-10 00:00:00\'");
         //regClient("nick2", "log2", "pass2");
-        std::cout << authClient("log2", "pass") << " = id\n";
+        //std::cout << authClient("log2", "pass") << " = id\n";
     }
 
     int authClient(std::string log, std::string pass){
@@ -139,7 +139,7 @@ int main(){
                             packet >> request;
                             std::cout << request << "\n";
                             int reqCode = requestIdentify(request);
-                            requestHandler(reqCode);
+                            requestHandler(reqCode, db);
                         }
                     }
                 }

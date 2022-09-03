@@ -1,0 +1,23 @@
+drop table if exists clients;
+drop table if exists messages;
+drop table if exists contacts;
+create table clients(
+	client_id	serial,
+	nickname	varchar(80),
+	login		varchar(80),
+	password	varchar(80)
+);
+create table messages(
+	message_id	serial,
+	sender_id	integer,
+	receiver_id		integer,
+	time	timestamp,
+	message varchar(500)
+);
+
+create table contacts(
+	contact_id serial,
+	client_id_1 integer,
+	client_id_2 integer
+);
+
