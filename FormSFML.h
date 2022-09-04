@@ -144,3 +144,29 @@ private:
 	int btnWidth;
 	int btnHeight;
 };
+
+vector<pair<string, string>> parseChats(string s){
+    vector<pair<string, string>> res;
+    string tmpName, tmpMess;
+    int flag = 0;
+    for(auto c : s){
+        if(c == '\n'){
+            res.push_back(make_pair(tmpName, tmpMess));
+            tmpName = "";
+            tmpMess = "";
+            flag = 0;
+        }
+        else{
+            if(c == ' ')
+                flag = 1;
+            else{
+                if(flag)
+                    tmpMess += c;
+                else
+                    tmpName += c;
+            }
+            
+        }
+    }
+    return res;
+}

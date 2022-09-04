@@ -1,10 +1,19 @@
 all: main
 
-main: server.o
-	g++ server.o -o messenger-app-server -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network -lpqxx -lpq -std=c++17
+main: server.o base64.o sha1.o handshake.o
+	g++ server.o base64.o sha1.o handshake.o -o messenger-app-server -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network -lpqxx -lpq -std=c++17
 
 server.o: server.cpp
 	g++ -c server.cpp -std=c++17
+
+base64.o: base64.cpp
+	g++ -c base64.cpp
+
+sha1.o: sha1.cpp
+	g++ -c sha1.cpp
+
+handshake.o: handshake.cpp
+	g++ -c handshake.cpp
 
 clean:
 	rm -rf *.o
