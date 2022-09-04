@@ -5,18 +5,33 @@
 #include <pqxx/pqxx>
 
 enum{
-    authCode,
-    regCode,
-    messageCode,
-    historyCode,
+    authCode = 0,
+    regCode = 1,
+    messageCode = 2,
+    historyCode = 3,
+    chatCode = 4,
     errCode = -1
 };
+
+std::vector<std::string> getArgs(std::string s) {
+  std::vector<std::string> v;
+  std::string tmp = "";
+  for(int i = 0; i < s.size(); i++){
+        if(!isspace(s[i]))
+            tmp += s[i];
+        else{
+            v.push_back(tmp);
+            tmp = "";
+        }
+  }
+  return v;
+}
 
 class Database{
 public:
     pqxx::connection conn;
-    pqxx::work w;
-    Database():w(conn), conn("user=postgres password=1 host=localhost port=5432 dbname=postgres"){
+    //pqxx::work w;
+    Database():/*w(conn),*/ conn("user=postgres password=1 host=localhost port=5432 dbname=postgres"){
         /*pqxx::result r = w.exec("SELECT * from clients where client_id = 1;");
         w.commit();
         std::cout << r[0][0].c_str() << r[0][1].c_str() << r[0][2].c_str() << r[0][3].c_str() << std::endl;*/
@@ -26,14 +41,15 @@ public:
     }
 
     int authClient(std::string log, std::string pass){
-        pqxx::result r = w.exec("SELECT * FROM clients WHERE password = \'" + pass + "\' AND login = \'" + log + "\';");
-        w.commit();
+        pqxx::work tr(conn);
+        pqxx::result r = tr.exec("SELECT * FROM clients WHERE password = \'" + pass + "\' AND login = \'" + log + "\';");
+        tr.commit();
         if(r.empty())
             return -1;
         else
             return atoi(r[0][0].c_str());
     }
-
+/*
     int regClient(std::string nickname, std::string log, std::string pass){
         pqxx::result r = w.exec("SELECT * FROM clients WHERE login = \'" + log + "\';");
         if(r.size() != 0)
@@ -54,29 +70,60 @@ public:
     int getHistoryMessages(int client_id){
         //get req to db
         return 1;
+    }*/
+    std::vector <std::string> getChats(int id){
+        pqxx::work tr(conn);
+        pqxx::result r = tr.exec("SELECT * FROM chats WHERE client_id_1 = " + std::to_string(id) + ";");
+        std::vector <std::string> res;
+        for(auto str : r)
+            res.push_back((str[1].c_str() + std::string(" ") + str[2].c_str() + "\n"));
+        tr.commit();
+        return res;
     }
     ~Database(){
         conn.close();
     }
 };
 
-
-
+std::string getFirstArg(std::string s){
+    std::string res = "";
+    for(auto c : s)
+        if(std::isspace(c) || c == '\n')
+            break;
+        else
+            res += c;
+    return res;
+}
 
 int requestIdentify(std::string request){
-    std::vector <std::string> requests = {"#auth", "#message", "#register"};
+    std::vector <std::string> requests = {"#auth", "#register", "#message", "#history", "#chats"};
+    std::string cmd = getFirstArg(request);
+    //std::cout << cmd << "! " << (cmd == requests[0]) << "!\n";
     for(int i = 0; i < requests.size(); i++){
-        if(request.substr(0, requests[i].size()) == request)
+        if(cmd == requests[i]){
+            //std::cout << cmd << " " << requests[i] << " reqCode = " << i << "\n";
             return i;
+        }
     }
     return -1;
 }
 
-void requestHandler(int reqCode, Database &db){
+void requestHandler(std::pair<sf::TcpSocket *, int>& client, int reqCode, std::vector<std::string> args, Database &db){
+    sf::Packet packet;
+    int res;
+    std::string outS;
+    std::vector<std::string> chats;
+    std::cout << "reqCode = " << reqCode << "\n";
     switch (reqCode)
     {
     case authCode:
-        //db.authClient();
+        std::cout << "try to auth client\n";
+        res = db.authClient(args[1], args[2]);
+        client.second = res;
+        outS = std::to_string(res) + "\n";
+        packet << outS;
+        if(client.first -> send(packet) != sf::Socket::Done)
+            std::cout << "Didnt send auth code\n";
         break;
     case regCode:
         //db.regClient();
@@ -87,18 +134,26 @@ void requestHandler(int reqCode, Database &db){
     case historyCode:
         //db.getHistoryMessages();
         break;
+    case chatCode:
+        chats = db.getChats(client.second);
+        packet.clear();
+        for(auto chat : chats)
+            packet << chat;
+        client.first -> send(packet);
+        break;
     case errCode:
         return;
     }
 }
 
-int main(){
+int main(int argc, char ** argv){
     Database db;
     // Create a socket to listen to new connections
     sf::TcpListener listener;
-    listener.listen(55000);
+    listener.listen(std::stoi(argv[1]), "0.0.0.0");
+    std::cout << sf::IpAddress::getPublicAddress() << "\n";
     // Create a list to store the future clients
-    std::vector <sf::TcpSocket*> clients;
+    std::vector <std::pair<sf::TcpSocket*, int>> clients;
     // Create a selector
     sf::SocketSelector selector;
     // Add the listener to the selector
@@ -115,7 +170,7 @@ int main(){
                 //client->setBlocking(false);
                 if (listener.accept(*client) == sf::Socket::Done){
                     // Add the new client to the clients list
-                    clients.push_back(client);
+                    clients.push_back(std::make_pair(client, -1));
                     // Add the new client to the selector so that we will
                     // be notified when he sends something
                     selector.add(*client);
@@ -129,17 +184,19 @@ int main(){
             }
             else{
                 // The listener socket is not ready, test all other sockets (the clients)
-                for (std::vector<sf::TcpSocket*>::iterator it = clients.begin(); it != clients.end(); ++it){
-                    sf::TcpSocket& client = **it;
+                for (auto it : clients){
+                    sf::TcpSocket& client = *(it.first);
                     if (selector.isReady(client)){
                         // The client has sent some data, we can receive it
                         sf::Packet packet;
                         std::string request;
                         if (client.receive(packet) == sf::Socket::Done){
+                            std::cout << "Receive packet\n";
                             packet >> request;
                             std::cout << request << "\n";
                             int reqCode = requestIdentify(request);
-                            requestHandler(reqCode, db);
+                            requestHandler(it, reqCode, getArgs(request), db);
+                            //std::cout << "CLIEnt ID = " << it.second << "\n";
                         }
                     }
                 }
