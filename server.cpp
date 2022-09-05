@@ -119,7 +119,7 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, int reqCode, std::
     std::string outS;
     std::vector<std::string> args = getArgs(request);
     std::vector<std::string> chats;
-    std::cout << "reqCode = " << reqCode << "\n";
+    std::cout << "reqCode = " << reqCode << " request = " << request << "\n";
     switch (reqCode)
     {
     case authCode:

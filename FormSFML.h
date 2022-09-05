@@ -50,7 +50,7 @@ public:
             m_rect.setOutlineColor(sf::Color::White);
         }
         else{
-            m_rect.setOutlineColor(sf::Color(88, 88, 88)); // Gray color
+            m_rect.setOutlineColor(sf::Color(88, 88, 88));
         }
     }
     void setOutline(sf::Color fillColor, sf::Color outlineColor, int thickness){
@@ -137,7 +137,12 @@ public:
 	void setTextColor(sf::Color color) {
 		text.setFillColor(color);
 	}
-
+    sf::Vector2f getPosition(){
+        return button.getPosition();
+    }
+    sf::Vector2i getSize(){
+        return {btnWidth, btnHeight};
+    }
 	void setPosition(sf::Vector2f point) {
 		button.setPosition(point);
         float xPos;
@@ -193,6 +198,61 @@ private:
 	int btnWidth;
 	int btnHeight;
     int textPoss;
+};
+
+class Scroll{
+    std::vector<Button *> contents;
+    sf::RenderWindow * window;
+public:
+    Scroll(sf::RenderWindow * wind):window(wind){}
+    void addContent(Button * btn){
+        contents.push_back(btn);
+    }
+    void draw(sf::RenderWindow& window){
+        for(int i = 0; i < contents.size(); i++)
+            if (contents[i] -> isMouseOver(window))
+                contents[i] -> setBackColor(sf::Color(30, 38, 48));
+            else
+                contents[i] -> setBackColor(sf::Color(26, 34, 44));
+        for(auto obj : contents){
+            obj -> drawTo(window);
+        }
+    }
+    int amount(){
+        return contents.size();
+    }
+    bool isMouseOver(sf::RenderWindow &window) {
+		int mouseX = sf::Mouse::getPosition(window).x;
+		int mouseY = sf::Mouse::getPosition(window).y;
+       
+        int btnPosX = contents[0] -> getPosition().x;
+        int btnPosY = contents[0] -> getPosition().y;
+        int btnxPosWidth = contents[contents.size() - 1] -> getPosition().x + contents[contents.size() - 1] -> getSize().x;
+        int btnyPosHeight = contents[contents.size() - 1] -> getPosition().y + contents[contents.size() - 1] -> getSize().y;
+        if (mouseX < btnxPosWidth && mouseX > btnPosX && mouseY < btnyPosHeight && mouseY > btnPosY) {
+            return true;
+        }
+        return false;
+	}
+    void updatePoses(float delta){
+        delta = - delta;
+        int btnPosY = contents[0] -> getPosition().y;
+        int btnyPosHeight = contents[contents.size() - 1] -> getPosition().y + contents[contents.size() - 1] -> getSize().y;
+        
+        if(btnPosY > 40 && btnyPosHeight < window -> getSize().y)
+            delta = 0;
+        else if(btnyPosHeight*1.0f - window -> getSize().y - delta * 20 + 16 < 0){
+            delta = 0;
+        }
+        else if(btnPosY - delta * 20 > 1024 * 0.3f - 5.0f){
+            delta = 0;
+        }
+        /*if(btnyPosHeight - delta * 20 > window -> getSize().y)
+            delta = (window -> getSize().y - btnyPosHeight) / 20;*/
+        for(int i = 0; i < contents.size(); i++){
+            contents[i] -> setPosition({0.0f, contents[i]->getPosition().y - delta*20});
+        }    
+    }
 };
 
 vector<pair<string, string>> parseChats(string s){
