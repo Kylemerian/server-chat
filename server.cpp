@@ -80,7 +80,7 @@ public:
         std::cout << id << " =id; rsize = " << r.size() << "\n";
         for(int i = 0; i < r.size(); i++){
             std::string s = r[i][2].c_str();
-            res.push_back(s + std::string(" message\n"));
+            res.push_back(s + std::string(" messageeeeeeeeeeeeeeeeeeeeee\n"));
         }
         tr.commit();
         return res;

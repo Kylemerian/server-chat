@@ -26,30 +26,26 @@ class UI{
     sf::RenderWindow * window;
     TextField log;
     TextField pass;
+    TextField message;
     Button btn;
+    Button * send;
     int resAuth;
+    sf::Font font;
+    vector<Button *> chats;
 public:
     UI(sf::RenderWindow * x) : 
         resAuth(-1),
-        window(x), log(20, window),
-        pass(20, window),
-        btn("Sign In", {window->getSize().x / 3.f, 50}, 30, sf::Color(41, 85, 135), sf::Color::White){
+        window(x), log(20, window, false),
+        pass(20, window, true),
+        message(500, window, false),
+        btn("Sign In", {window->getSize().x / 3.f, 50}, 30, sf::Color(41, 85, 135), sf::Color::White, CENTERED){
         page = AUTHPAGE;
+        font.loadFromFile("ttf/None.ttf");
+    }
+    void authInit(){
+
     }
     void authDraw(){
-        
-        /*log.setSize({window->getSize().x / 3.f, 30});
-        pass.setSize({window->getSize().x / 3.f, 30});
-        signInButton.setSize({window->getSize().x / 3.f, 30});
-        log.setPosition();
-        pass.setPosition(window->getSize().x / 3.f, window->getSize().y / 2.f + 20);
-        signInButton.setPosition(window->getSize().x / 3.f, window->getSize().y / 2.f + 90);
-        log.setFillColor(sf::Color(80, 162, 242));
-        pass.setFillColor(sf::Color(80, 162, 242));
-        signInButton.setFillColor(sf::Color(80, 162, 242));*/
-
-        sf::Font font;
-        font.loadFromFile("ttf/None.ttf");
 	    btn.setFont(font);
         btn.setBold();
         btn.setSize(window->getSize().x / 3.f, 50);
@@ -104,8 +100,8 @@ public:
 				}
 	
     }
-    void mainDraw(){
-        sf::Packet outPacket, inPacket;
+    void mainInit(){
+    sf::Packet outPacket, inPacket;
         string s;
         outPacket << "#chats\n"; 
         if (socket.send(outPacket) != sf::Socket::Done){
@@ -115,18 +111,23 @@ public:
             cout << "smth" << "\n";
         inPacket >> s;
         vector<pair<string, string>> listChats = parseChats(s);
-        for(int i = 0; i < listChats.size(); i++)
-            cout << listChats[i].first << " " << listChats[i].second << "\n";
         
-        sf::RectangleShape chats[listChats.size()];
         for(int i = 0; i < listChats.size(); i++){
-            chats[i].setSize({HEIGHT * 0.3f - 5.0f, 65.0f});
-            chats[i].setPosition({0, i * 70 + WIDTH /18 + 5});
-            chats[i].setFillColor(sf::Color(26, 34, 44));
-            chats[i].setOutlineThickness(4);
-            chats[i].setOutlineColor(sf::Color(20, 30, 40));
+            Button * tmp = new Button(listChats[i].first, {HEIGHT * 0.3f - 5.0f, 65.0f}, 15, sf::Color(26, 34, 44),
+                sf::Color::White, UPPED, listChats[i].second);
+            tmp -> setPosition({0.0f, i * 70 * 1.0f + WIDTH /18 + 5});
+            //tmp -> setOutline(sf::Color(26, 34, 44), sf::Color(20, 30, 40), 4);
+            chats.push_back(tmp);
         }
 
+        message.setSize(window -> getSize().x - 0.35f * HEIGHT, 30.0f);
+        message.setPosition(HEIGHT * 0.31f, window -> getSize().y - 40);
+        send = new Button("", {25, 25}, 0, sf::Color(35, 40, 53), sf::Color::Black, CENTERED);
+        send -> setPosition({1.0f * window -> getSize().x - 32, 1.0f * window -> getSize().y - 37});
+        if (send -> isMouseOver(*window))
+                send -> setBackColor(sf::Color(40, 45, 58));
+            else
+                send -> setBackColor(sf::Color(35, 40, 53));
         sf::RectangleShape Boxes[4];
         for(int i = 0; i < 4; i++){
             Boxes[i].setOutlineThickness(4);
@@ -136,21 +137,81 @@ public:
         Boxes[0].setSize({HEIGHT * 0.3f, window -> getSize().y * 1.0f});
         Boxes[1].setSize({HEIGHT * 0.3f, WIDTH /18});
         
+        Boxes[2].setFillColor(sf::Color(20, 30, 40));
         Boxes[2].setSize({window -> getSize().x * 0.7f, window -> getSize().y * 1.0f});
         Boxes[3].setSize({window -> getSize().x * 0.7f, WIDTH /18});
         Boxes[2].setPosition({HEIGHT * 0.3f, 0});
         Boxes[3].setPosition({HEIGHT * 0.3f, 0});
-    
-        
+        for(int i = 0; i < chats.size(); i++)
+            if (chats[i] -> isMouseOver(*window))
+                chats[i] -> setBackColor(sf::Color(30, 38, 48));
+            else
+                chats[i] -> setBackColor(sf::Color(26, 34, 44));
         window -> draw(Boxes[0]);
         window -> draw(Boxes[1]);
         window -> draw(Boxes[2]);
         window -> draw(Boxes[3]);
-        for(int i = 0; i < listChats.size(); i++)
-            window -> draw(chats[i]);
+        send -> drawTo(*window);
+    }
+    void mainDraw(){
+        
+        for(int i = 0; i < chats.size(); i++){
+            chats[i] -> drawTo(*window);
+        }
+        
+        window -> draw(message);
+    }
+    void mainEvents(sf::Event event){
+	    if(event.type == sf::Event::MouseButtonPressed)
+			for(int i = 0; i < chats.size(); i++)
+            	if (chats[i] -> isMouseOver(*window)) {
+                    cout << "click chat: " << chats[i] -> getText() << "\n";//send req to open chat
+                    sf::Packet packet;
+                    string outS = "#chat " + chats[i] -> getText() + "\n";
+                    packet << outS;
+                    socket.send(packet);
+                    packet.clear();
+                    socket.receive(packet);
+                    outS = ""; packet >> outS;
+                    cout << outS << " messages\n";
+				}
+        if (event.type == sf::Event::MouseButtonReleased){
+                auto pos = sf::Mouse::getPosition(*window);
+                message.setFocus(false);
+                if (message.contains(sf::Vector2f(pos)))
+                    message.setFocus(true);
+            }
+            else
+                message.handleInput(event);
+
+        if(event.type == sf::Event::MouseButtonPressed)
+            if(send -> isMouseOver(*window)){
+                cout << "message = " << message.getText() << " sent\n";//send req mess
+                message.setText("");
+            }
+    }
+    void mainClean(){
+        for(int i = 0; i < chats.size(); i++)
+            //cout << chats[i]->getText() << "\n";
+            delete chats[i];
+        chats.clear();
+        delete send;
     }
     void logDraw(){
 
+    }
+    void init(){
+        switch (page){
+        case AUTHPAGE:
+            authInit();
+            break;
+        case LOGPAGE:
+            //logEvents();
+            break;
+        case MAINPAGE:
+            mainInit();
+            break;
+        }
     }
     void events(sf::Event e){
         switch (page){
@@ -163,7 +224,7 @@ public:
             //logEvents();
             break;
         case MAINPAGE:
-           // mainEvents();
+            mainEvents(e);
             break;
         }
     }
@@ -180,6 +241,19 @@ public:
             break;
         }
     }
+    void cleanMem(){
+        switch (page){
+        case AUTHPAGE:
+            //authDraw();
+            break;
+        case LOGPAGE:
+            //logDraw();
+            break;
+        case MAINPAGE:
+            mainClean();
+            break;
+        }
+    }
     ~UI(){
         
     }
@@ -191,12 +265,14 @@ int main(int argc, char ** argv){
         std::cout << "Didn't connect to server\n";
     }
     sf::RenderWindow window(sf::VideoMode(HEIGHT, WIDTH), "Chat");
+    window.setVerticalSyncEnabled(true);
     UI ui(&window);
 
     sf::View view = window.getDefaultView();
 
     while(window.isOpen()){
         sf::Event event;
+        ui.init();
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed){
@@ -205,6 +281,10 @@ int main(int argc, char ** argv){
             }
             if (event.type == sf::Event::Resized){
                 // update the view to the new size of the window
+                /*if(window.getSize().x < 500)
+                    window.setSize({500, window.getSize().y});*/
+                if(window.getSize().y < 400)
+                    window.setSize({window.getSize().x, 400});
                 sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
                 window.setView(sf::View(visibleArea));
             }
@@ -214,6 +294,7 @@ int main(int argc, char ** argv){
         ui.draw();
         window.display();
         window.clear(sf::Color(26, 34, 44));
+        ui.cleanMem();
     }
 
     return 0;
