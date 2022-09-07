@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <pqxx/pqxx>
+#include <iomanip>
+#include <ctime>
 #include "handshake.hpp"
 
 enum{
@@ -32,15 +34,7 @@ std::vector<std::string> getArgs(std::string s) {
 class Database{
 public:
     pqxx::connection conn;
-    //pqxx::work w;
-    Database():/*w(conn),*/ conn("user=postgres password=1 host=localhost port=5432 dbname=postgres"){
-        /*pqxx::result r = w.exec("SELECT * from clients where client_id = 1;");
-        w.commit();
-        std::cout << r[0][0].c_str() << r[0][1].c_str() << r[0][2].c_str() << r[0][3].c_str() << std::endl;*/
-        //message(2, 3, "mess", "\'2010-10-10 00:00:00\'");
-        //regClient("nick2", "log2", "pass2");
-        //std::cout << authClient("log2", "pass") << " = id\n";
-    }
+    Database(): conn("user=postgres password=1 host=localhost port=5432 dbname=postgres"){}
 
     int authClient(std::string log, std::string pass){
         pqxx::work tr(conn);
@@ -51,33 +45,52 @@ public:
         else
             return atoi(r[0][0].c_str());
     }
-/*
+
     int regClient(std::string nickname, std::string log, std::string pass){
-        pqxx::result r = w.exec("SELECT * FROM clients WHERE login = \'" + log + "\';");
+        pqxx::work tr(conn);
+        pqxx::result r = tr.exec("SELECT * FROM clients WHERE login = \'" + log + "\' OR nickname = \'" + nickname + "\';");
+        tr.commit();
+        std::cout << "collision size = " << r.size() << "\n";
         if(r.size() != 0)
             return -1;
-        r = w.exec("INSERT INTO clients(nickname, login, password)"
+        pqxx::work tr2(conn);
+        r = tr2.exec("INSERT INTO clients(nickname, login, password)"
                                 "VALUES(\'"+ nickname + "\', \'" + log + "\', \'" + pass +"\');");
-        w.commit();
+        tr2.commit();
         return 0;
     }
 
-    int message(int sender_id, int receiver_id, std::string message, std::string time){
-        pqxx::result r = w.exec("INSERT INTO messages(sender_id, receiver_id, time, message)"
-                                "VALUES(" + std::to_string(sender_id) + ", " + std::to_string(receiver_id) + ", " + time + ", \'" + message + "\');");
-        w.commit();
+    int message(int sender_id, int receiver_id, std::string message){
+        pqxx::work tr(conn);
+        std::time_t t = std::time(nullptr);
+        std::ostringstream ss;
+        ss << std::put_time(std::localtime(&t), "%F %T");
+        pqxx::result r = tr.exec("INSERT INTO messages(sender_id, receiver_id, message, time) "
+                                "VALUES(" + std::to_string(sender_id) + ", " + std::to_string(receiver_id) + 
+                                ", \'" + message + "\', \'" + ss.str() + "\');");
+        tr.commit();
         return r.size();
     }
 
-    int getHistoryMessages(int client_id){
-        //get req to db
-        return 1;
-    }*/
+    std::vector <std::string> getHistoryMessages(int client_id, int conv_id){
+        pqxx::work tr(conn);
+        pqxx::result r = tr.exec("select * from messages "
+                                "where sender_id = " + std::to_string(client_id) + " and receiver_id = " + 
+                                std::to_string(conv_id) + " order by time desc;");
+        std::vector <std::string> res;      
+        std::cout << "HISTORYREQ\n";           
+        for(int i = 0; i < r.size(); i++){
+            std::string s = r[i][4].c_str();
+            res.push_back(s + "\n");
+        }
+        tr.commit();
+        return res;
+    }
     std::vector <std::string> getChats(int id){
         pqxx::work tr(conn);
         pqxx::result r = tr.exec("SELECT * FROM chats WHERE client_id_1 = " + std::to_string(id) + ";");
         std::vector <std::string> res;
-        std::cout << id << " =id; rsize = " << r.size() << "\n";
+        //std::cout << id << " =id; rsize = " << r.size() << "\n";
         for(int i = 0; i < r.size(); i++){
             std::string s = r[i][2].c_str();
             res.push_back(s + std::string(" messageeeeeeeeeeeeeeeeeeeeee\n"));
@@ -119,7 +132,7 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, int reqCode, std::
     std::string outS;
     std::vector<std::string> args = getArgs(request);
     std::vector<std::string> chats;
-    std::cout << "reqCode = " << reqCode << " request = " << request << "\n";
+//    std::cout << "reqCode = " << reqCode << " request = " << request << "\n";
     switch (reqCode)
     {
     case authCode:
@@ -127,18 +140,29 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, int reqCode, std::
         res = db.authClient(args[1], args[2]);
         client -> second = res;
         outS = std::to_string(res) + "\n";
+        packet.clear();
         packet << outS;
         if(client -> first -> send(packet) != sf::Socket::Done)
             std::cout << "Didnt send auth code\n";
         break;
     case regCode:
-        //db.regClient();
+        res = db.regClient(args[3], args[1], args[2]);
+        packet.clear(); outS = std::to_string(res) + "\n";
+        packet << outS;
+        client -> first -> send(packet);
         break;
     case messageCode:
-        //db.message();
+        db.message(client -> second, stoi(args[1]), args[2]);
         break;
     case historyCode:
-        //db.getHistoryMessages();
+        outS = "";
+        chats = db.getHistoryMessages(client -> second, stoi(args[1]));
+        std::cout << "HHIST " << outS << "\n";
+        for(int i = 0; i < chats.size(); i++)
+            outS += chats[i];
+        std::cout << "HHIST " << outS << "\n";
+        packet.clear(); packet << outS;
+        client -> first -> send(packet); 
         break;
     case chatCode:
         chats = db.getChats(client -> second);
@@ -147,7 +171,7 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, int reqCode, std::
         for(int i = 0; i < chats.size(); i++)
             outS += chats[i];
         packet << outS;
-        std::cout << outS << " THAT SENT\n";
+        // std::cout << outS << " THAT SENT\n";
         client -> first -> send(packet);
         break;
     case HTTPCode:
@@ -202,12 +226,10 @@ int main(int argc, char ** argv){
                         sf::Packet packet;
                         std::string request;
                         if (client.receive(packet) == sf::Socket::Done){
-                            std::cout << "Receive packet\n";
                             packet >> request;
                             std::cout << request << "\n";
                             int reqCode = requestIdentify(request);
                             requestHandler(&clients[i], reqCode, request, db);
-                            //clients[i].second = 4;
                         }
                     }
                 }

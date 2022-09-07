@@ -62,6 +62,12 @@ public:
         m_text = s;
         txt.setString(m_text);
     }
+    string hide(){
+        string res = "";
+        for(int i = 0; i < m_text.size(); i++)
+            res += '*';
+        return res;
+    }
     void handleInput(sf::Event e){
         if (!m_hasfocus || e.type != sf::Event::TextEntered)
             return;
@@ -69,13 +75,13 @@ public:
         if (e.text.unicode == 8){   // Delete key
             m_text = m_text.substr(0, m_text.size() - 1);
         }
-        else if (m_text.size() < m_size){
-            if(!is_hidden)
-                m_text += e.text.unicode;
-            else
-                m_text += "*";
+        else if (m_text.size() < m_size){    
+            m_text += e.text.unicode;
         }
-        txt.setString(m_text);
+        if(is_hidden)
+            txt.setString(hide());
+        else
+            txt.setString(m_text);
         txt.setPosition({m_rect.getPosition().x + 5, m_rect.getPosition().y - 2});
     }
     virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const{ 
@@ -114,6 +120,9 @@ public:
 	}
     void setBold(){
         text.setStyle(sf::Text::Bold);
+    }
+    void setText(string s){
+        text.setString(s);
     }
     void setOutline(sf::Color fillColor, sf::Color outlineColor, int thickness){
         button.setFillColor(fillColor);
@@ -221,6 +230,18 @@ public:
     int amount(){
         return contents.size();
     }
+    void clear(){
+        contents.clear();
+    }
+    string idClickedBox(){
+        for(auto c : contents)
+            if(c -> isMouseOver(*window))
+                return c->getText();
+        return "";
+    }
+    int isClear(){
+        return contents.size() == 0;
+    }
     bool isMouseOver(sf::RenderWindow &window) {
 		int mouseX = sf::Mouse::getPosition(window).x;
 		int mouseY = sf::Mouse::getPosition(window).y;
@@ -241,16 +262,14 @@ public:
         
         if(btnPosY > 40 && btnyPosHeight < window -> getSize().y)
             delta = 0;
-        else if(btnyPosHeight*1.0f - window -> getSize().y - delta * 20 + 16 < 0){
+        else if(btnyPosHeight*1.0f - window -> getSize().y - delta * 30 + 16 < 0){
             delta = 0;
         }
-        else if(btnPosY - delta * 20 > 1024 * 0.3f - 5.0f){
+        else if(btnPosY - delta * 30 > 768 /18 + 10){
             delta = 0;
         }
-        /*if(btnyPosHeight - delta * 20 > window -> getSize().y)
-            delta = (window -> getSize().y - btnyPosHeight) / 20;*/
         for(int i = 0; i < contents.size(); i++){
-            contents[i] -> setPosition({0.0f, contents[i]->getPosition().y - delta*20});
+            contents[i] -> setPosition({0.0f, contents[i]->getPosition().y - delta*30});
         }    
     }
 };
@@ -276,6 +295,21 @@ vector<pair<string, string>> parseChats(string s){
                     tmpName += c;
             }
             
+        }
+    }
+    return res;
+}
+
+vector<string> parseMsgs(string s){
+    vector<string> res;
+    string tmp;
+    for(auto c : s){
+        if(c == '\n'){
+            res.push_back(tmp);
+            tmp = "";
+        }
+        else{
+            tmp += c;
         }
     }
     return res;
