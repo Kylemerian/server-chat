@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include "FormSFML.h"
 
+
 using namespace std;
 
 sf::TcpSocket socket;
@@ -43,17 +44,17 @@ public:
         resAuth(-1),
         resReg(-1),
         window(x),
-        chats(x),
-        msgs(x)
+        chats(x, sf::Color(30, 38, 48), sf::Color(26, 34, 44)),
+        msgs(x, sf::Color(38, 76, 110), sf::Color(43, 82, 120))
     {
         log = new TextField(20, window, false);
         pass = new TextField(20, window, true);
         btn = new Button("Sign In", {window->getSize().x / 3.f, 50}, 30, sf::Color(41, 85, 135), sf::Color::White, CENTERED);
-        message = new TextField(20, window, false);
+        message = new TextField(500, window, false);
         page = AUTHPAGE;
         font.loadFromFile("ttf/None.ttf");
         send = new Button("", {25, 25}, 0, sf::Color(35, 40, 53), sf::Color::Black, CENTERED);
-        convName.first = new Button("", {window -> getSize().x - 0.32f * HEIGHT, 30.0f}, 20, sf::Color(35, 40, 53), sf::Color::White, CENTERED);
+        convName.first = new Button("", {window -> getSize().x - 0.32f * HEIGHT, 30.0f}, 20, sf::Color(26, 34, 44), sf::Color::White, CENTERED);
         convName.second = -1;
     }
     void authInit(){
@@ -96,7 +97,7 @@ public:
             else 
                 btn -> setBackColor(sf::Color(41, 85, 135));
 
-	    if(event.type == sf::Event::MouseButtonPressed)
+	    if(event.type == sf::Event::MouseButtonReleased)
             if (btn -> isMouseOver(*window)) {
                 sf::Packet inPacket, outPacket;
                 string s = "#auth " + log->getText() + ' ' + pass->getText() + "\n";
@@ -135,7 +136,7 @@ public:
             }
         }
         //
-        if(convName.second != -1){
+        if(convName.second != -1 && msgs.isClear()){
             packet.clear();
             string outS = "#history " + to_string(convName.second) + string("\n");
             packet << outS;
@@ -145,9 +146,9 @@ public:
             outS = ""; packet >> outS;
             vector<string> listMsgs = parseMsgs(outS);
             for(int i = 0; i < listMsgs.size(); i++){
-                Button * tmp = new Button(listMsgs[i], {HEIGHT * 0.3f - 5.0f, 65.0f}, 15, sf::Color(26, 34, 44),
+                Button * tmp = new Button(listMsgs[listMsgs.size() - 1 - i], {HEIGHT * 0.25f - 5.0f, 35.0f}, 13, sf::Color::Red,
                     sf::Color::White, CENTERED);
-                tmp -> setPosition({0.4f * HEIGHT, i * 70 * 1.0f + WIDTH /18 + 5});
+                tmp -> setPosition({0.31f * HEIGHT, i * 50 * 1.0f + WIDTH /18 + 10});
                 msgs.addContent(tmp);
             }
         }
@@ -183,23 +184,25 @@ public:
         window -> draw(Boxes[0]);
         window -> draw(Boxes[2]);
         chats.draw(*window);
+        msgs.draw(*window);
+        window -> draw(Boxes[1]);
         if(convName.second != -1){
             window -> draw(*message);
             send -> drawTo(*window);
         }
-        window -> draw(Boxes[1]);
         window -> draw(Boxes[3]);
         convName.first -> drawTo(*window);
-        msgs.draw(*window);
     }
     void mainEvents(sf::Event event){
 	    if(event.type == sf::Event::MouseButtonPressed)
 			for(int i = 0; i < chats.amount(); i++)
             	if (chats.isMouseOver(*window)) {
                     cout << "click chat: " << chats.idClickedBox() << "\n";//send req to open chat
-                    convName.second = stoi(chats.idClickedBox());
-                    convName.first->setText(to_string(convName.second));
-                    msgs.clear();
+                    if(chats.idClickedBox() != ""){
+                        convName.second = stoi(chats.idClickedBox());
+                        convName.first->setText(to_string(convName.second));
+                        msgs.clear();
+                    }
                     // packet.clear();
 //                    string outS = "#history " + to_string(convName.second) + string("\n");
 //                    packet << outS;
@@ -209,7 +212,7 @@ public:
 //                    outS = ""; packet >> outS;                  
 //                    cout << outS << "\n";
 			    }
-        if (event.type == sf::Event::MouseButtonReleased){
+        if (event.type == sf::Event::MouseButtonPressed){
             auto pos = sf::Mouse::getPosition(*window);
             message -> setFocus(false);
             if (message -> contains(sf::Vector2f(pos)))
@@ -218,20 +221,28 @@ public:
         else
             message->handleInput(event);
 
-        if(event.type == sf::Event::MouseButtonPressed)
-            if(send -> isMouseOver(*window)){
-                packet.clear();
-                string outS = "#message " + to_string(convName.second) + " " + message -> getText() + "\n";
-                packet << outS;
-                cout << "message = " << message -> getText() << " sent\n";//send req mess
-                socket.send(packet);
-                message -> setText("");
-            }
+        if((event.type == sf::Event::MouseButtonPressed && send -> isMouseOver(*window)) || 
+            (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Enter && message -> isFocused())){
+            
+            packet.clear();
+            string outS = "#message " + to_string(convName.second) + " " + message -> getText() + "\n";
+            packet << outS;
+            cout << "message = " << message -> getText() << " sent\n";//send req mess
+            socket.send(packet);
+            message -> setText("");   
+        }
         if(event.type == sf::Event::MouseWheelScrolled){
             if(chats.isMouseOver(*window))
                 chats.updatePoses(event.mouseWheelScroll.delta);
+            if(msgs.isMouseOver(*window))
+                msgs.updatePoses(event.mouseWheelScroll.delta);
             cout << "delta = " << event.mouseWheelScroll.delta << "\n";
-        } 
+        }
+        if(event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Escape){
+            convName.second = -1;
+            convName.first->setText("");
+            msgs.clear();
+        }
     }
     void mainClean(){
         /*for(int i = 0; i < chats.size(); i++)
@@ -280,7 +291,7 @@ public:
                 resReg = stoi(outS);
                 log->setText(""); pass->setText(""); 
             }
-        if (event.type == sf::Event::MouseButtonReleased){
+        if (event.type == sf::Event::MouseButtonPressed){
             auto pos = sf::Mouse::getPosition(*window);
             log -> setFocus(false);
             pass -> setFocus(false);
@@ -354,7 +365,7 @@ public:
             authClean();
             break;
         case LOGPAGE:
-            //logDraw();
+            logDraw();
             break;
         case MAINPAGE:
             mainClean();
@@ -372,7 +383,7 @@ int main(int argc, char ** argv){
         std::cout << "Didn't connect to server\n";
     }
     sf::RenderWindow window(sf::VideoMode(HEIGHT, WIDTH), "Chat");
-    window.setFramerateLimit(60);
+    //window.setFramerateLimit(1);
     UI ui(&window);
 
     sf::View view = window.getDefaultView();

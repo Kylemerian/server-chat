@@ -28,6 +28,9 @@ public:
         txt.setCharacterSize(25);
         
     }
+    bool isFocused(){
+        return m_hasfocus;
+    }
     void setPosition(int textPosX, int textPosY){
         m_rect.setPosition({textPosX * 1.0f, textPosY * 1.0f});
     }
@@ -138,7 +141,9 @@ public:
         btnWidth = x;
         btnHeight = y;
     }
-
+    sf::Color getBgColor(){
+        return button.getFillColor();
+    }
 	void setBackColor(sf::Color color) {
 		button.setFillColor(color);
 	}
@@ -212,17 +217,21 @@ private:
 class Scroll{
     std::vector<Button *> contents;
     sf::RenderWindow * window;
+    sf::Color colors[2];
 public:
-    Scroll(sf::RenderWindow * wind):window(wind){}
+    Scroll(sf::RenderWindow * wind, sf::Color focusColor, sf::Color unfocusColor):window(wind){
+        colors[0] = unfocusColor;
+        colors[1] = focusColor;
+    }
     void addContent(Button * btn){
         contents.push_back(btn);
     }
     void draw(sf::RenderWindow& window){
         for(int i = 0; i < contents.size(); i++)
             if (contents[i] -> isMouseOver(window))
-                contents[i] -> setBackColor(sf::Color(30, 38, 48));
+                contents[i] -> setBackColor(colors[1]);
             else
-                contents[i] -> setBackColor(sf::Color(26, 34, 44));
+                contents[i] -> setBackColor(colors[0]);
         for(auto obj : contents){
             obj -> drawTo(window);
         }
@@ -269,7 +278,7 @@ public:
             delta = 0;
         }
         for(int i = 0; i < contents.size(); i++){
-            contents[i] -> setPosition({0.0f, contents[i]->getPosition().y - delta*30});
+            contents[i] -> setPosition({1.0f * contents[i]->getPosition().x, contents[i]->getPosition().y - delta*30});
         }    
     }
 };
