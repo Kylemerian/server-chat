@@ -31,6 +31,24 @@ std::vector<std::string> getArgs(std::string s) {
   return v;
 }
 
+sf::Socket::Status send(sf::TcpSocket& sock, std::string s){
+    char buff[s.size() + 1];
+    strncpy(buff, s.c_str(), s.size());
+    buff[s.size()] = 0;
+    return sock.send(buff, s.size() + 1);
+}
+
+sf::Socket::Status receive(sf::TcpSocket& sock, std::string &s){
+    char buff[1024];
+    std::size_t status;
+    std::cout << "b4 receive\n";
+    sf::Socket::Status res = sock.receive(buff, 1024, status);
+    std::cout << "after receive\n";
+    buff[status] = 0;
+    s = std::string(buff);
+    return res;
+}
+
 class Database{
 public:
     pqxx::connection conn;
@@ -127,12 +145,11 @@ int requestIdentify(std::string request){
 }
 
 void requestHandler(std::pair<sf::TcpSocket *, int> * client, int reqCode, std::string request, Database &db){
-    sf::Packet packet;
     int res;
     std::string outS;
     std::vector<std::string> args = getArgs(request);
     std::vector<std::string> chats;
-//    std::cout << "reqCode = " << reqCode << " request = " << request << "\n";
+    std::cout << "reqCode = " << reqCode << " request = " << request << "\n";
     switch (reqCode)
     {
     case authCode:
@@ -140,16 +157,14 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, int reqCode, std::
         res = db.authClient(args[1], args[2]);
         client -> second = res;
         outS = std::to_string(res) + "\n";
-        packet.clear();
-        packet << outS;
-        if(client -> first -> send(packet) != sf::Socket::Done)
+        if(send(*(client -> first), outS) != sf::Socket::Done)
             std::cout << "Didnt send auth code\n";
+        std::cout << "sent auth code\n";
         break;
     case regCode:
         res = db.regClient(args[3], args[1], args[2]);
-        packet.clear(); outS = std::to_string(res) + "\n";
-        packet << outS;
-        client -> first -> send(packet);
+        outS = std::to_string(res) + "\n";
+        send(*(client -> first), outS);
         break;
     case messageCode:
         db.message(client -> second, stoi(args[1]), args[2]);
@@ -161,22 +176,16 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, int reqCode, std::
         for(int i = 0; i < chats.size(); i++)
             outS += chats[i];
         std::cout << "HHIST " << outS << "\n";
-        packet.clear(); packet << outS;
-        client -> first -> send(packet); 
+        send(*(client -> first), outS);
         break;
     case chatCode:
         chats = db.getChats(client -> second);
-        packet.clear();
         outS = "";
         for(int i = 0; i < chats.size(); i++)
-            outS += chats[i];
-        packet << outS;
-        // std::cout << outS << " THAT SENT\n";
-        client -> first -> send(packet);
+            outS += chats[i];;
+        std::cout << outS << " THAT SENT\n";
+        send(*(client -> first), outS);
         break;
-    case HTTPCode:
-        outS = handshake(request);
-        client -> first -> send(outS.c_str(), outS.size());
     case errCode:
         return;
     }
@@ -195,7 +204,7 @@ int main(int argc, char ** argv){
     // Add the listener to the selector
     selector.add(listener);
     // Endless loop that waits for new connections
-    //while(1){
+    while(1){
         // Make the selector wait for data on any socket
         while(selector.wait()){
             // Test the listener
@@ -223,10 +232,9 @@ int main(int argc, char ** argv){
                     sf::TcpSocket& client = *(clients[i].first);
                     if (selector.isReady(client)){
                         // The client has sent some data, we can receive it
-                        sf::Packet packet;
+                        std::cout << "DSFFSDDF\n";
                         std::string request;
-                        if (client.receive(packet) == sf::Socket::Done){
-                            packet >> request;
+                        if (receive(client, request) == sf::Socket::Done){
                             std::cout << request << "\n";
                             int reqCode = requestIdentify(request);
                             requestHandler(&clients[i], reqCode, request, db);
@@ -235,7 +243,7 @@ int main(int argc, char ** argv){
                 }
             }
         }
-    //  }
+    }
 
  
     return 0;

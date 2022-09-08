@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <SFML/Graphics.hpp>
+#include <cstring>
 #include "FormSFML.h"
 
 
@@ -20,11 +21,26 @@ enum WindowSize{
     WIDTH = 768
 };
 
+sf::Socket::Status send(sf::TcpSocket& sock, std::string s){
+    char buff[s.size() + 1];
+    strncpy(buff, s.c_str(), s.size());
+    buff[s.size()] = 0;
+    return sock.send(buff, s.size() + 1);
+}
+
+sf::Socket::Status receive(sf::TcpSocket& sock, std::string &s){
+    char buff[1024];
+    std::size_t status;
+    sf::Socket::Status res = sock.receive(buff, 1024, status);
+    buff[status] = 0;
+    s = std::string(buff);
+    return res;
+}
+
 class UI{
     int page;//current page
     //general
     sf::RenderWindow * window;
-    sf::Packet packet;
     //forAuth
     TextField * log;
     TextField * pass;
@@ -32,7 +48,7 @@ class UI{
     int resAuth;
     //forMain
     TextField * message;
-    Button * send;
+    Button * sendBtn;
     sf::Font font;
     Scroll chats;
     Scroll msgs;
@@ -53,7 +69,7 @@ public:
         message = new TextField(500, window, false);
         page = AUTHPAGE;
         font.loadFromFile("ttf/None.ttf");
-        send = new Button("", {25, 25}, 0, sf::Color(35, 40, 53), sf::Color::Black, CENTERED);
+        sendBtn = new Button("", {25, 25}, 0, sf::Color(35, 40, 53), sf::Color::Black, CENTERED);
         convName.first = new Button("", {window -> getSize().x - 0.32f * HEIGHT, 30.0f}, 20, sf::Color(26, 34, 44), sf::Color::White, CENTERED);
         convName.second = -1;
     }
@@ -99,31 +115,25 @@ public:
 
 	    if(event.type == sf::Event::MouseButtonReleased)
             if (btn -> isMouseOver(*window)) {
-                sf::Packet inPacket, outPacket;
                 string s = "#auth " + log->getText() + ' ' + pass->getText() + "\n";
-                outPacket << s;
-                cout << "snding auth\n";
-                if (socket.send(outPacket) != sf::Socket::Done)
-                    std::cout << "Didn't send\n";
+                cout << "snding auth" << s << "!\n";
                 
-                if(socket.receive(inPacket) != sf::Socket::Done)
-                    cout << "Error send" << "\n";
+                if (send(socket, s) != sf::Socket::Done)
+                    std::cout << "Didn't send\n";
+                s = ""; 
+                if(receive(socket, s) != sf::Socket::Done)
+                    cout << "Error receive" << "\n";
                 cout << "receive auth\n";
-                inPacket >> s;
                 resAuth = std::stoi(s);
                 cout << "get pack: " << resAuth << "\n";
             }
     }
     void mainInit(){
         string s;
-        packet.clear();
-        packet << "#chats\n"; 
-        if (socket.send(packet) != sf::Socket::Done)
+        if (send(socket, string("#chats\n")) != sf::Socket::Done)
             ;//std::cout << "Didn't send\n";
-        packet.clear();
-        if(socket.receive(packet) != sf::Socket::Done)
+        if(receive(socket, s) != sf::Socket::Done)
             ;//cout << "Didnt receive" << "\n";
-        packet >> s;
         
         if(chats.isClear()){
             vector<pair<string, string>> listChats = parseChats(s);
@@ -137,13 +147,10 @@ public:
         }
         //
         if(convName.second != -1 && msgs.isClear()){
-            packet.clear();
             string outS = "#history " + to_string(convName.second) + string("\n");
-            packet << outS;
-            socket.send(packet);
-            packet.clear();
-            socket.receive(packet);
-            outS = ""; packet >> outS;
+            send(socket, outS);
+            outS = "";
+            receive(socket, outS);
             vector<string> listMsgs = parseMsgs(outS);
             for(int i = 0; i < listMsgs.size(); i++){
                 Button * tmp = new Button(listMsgs[listMsgs.size() - 1 - i], {HEIGHT * 0.25f - 5.0f, 35.0f}, 13, sf::Color::Red,
@@ -159,11 +166,11 @@ public:
         convName.first -> setSize(window -> getSize().x - 0.32f * HEIGHT, 30.0f);
         convName.first -> setPosition({HEIGHT * 0.31f, 7.0f});
         
-        send -> setPosition({1.0f * window -> getSize().x - 32, 1.0f * window -> getSize().y - 37});
-        if (send -> isMouseOver(*window))
-            send -> setBackColor(sf::Color(40, 45, 58));
+        sendBtn -> setPosition({1.0f * window -> getSize().x - 32, 1.0f * window -> getSize().y - 37});
+        if (sendBtn -> isMouseOver(*window))
+            sendBtn -> setBackColor(sf::Color(40, 45, 58));
         else
-            send -> setBackColor(sf::Color(35, 40, 53));        
+            sendBtn -> setBackColor(sf::Color(35, 40, 53));        
     }
     void mainDraw(){
         sf::RectangleShape Boxes[4];
@@ -188,7 +195,7 @@ public:
         window -> draw(Boxes[1]);
         if(convName.second != -1){
             window -> draw(*message);
-            send -> drawTo(*window);
+            sendBtn -> drawTo(*window);
         }
         window -> draw(Boxes[3]);
         convName.first -> drawTo(*window);
@@ -221,20 +228,18 @@ public:
         else
             message->handleInput(event);
 
-        if((event.type == sf::Event::MouseButtonPressed && send -> isMouseOver(*window)) || 
+        if((event.type == sf::Event::MouseButtonPressed && sendBtn -> isMouseOver(*window)) || 
             (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Enter && message -> isFocused())){
             
-            packet.clear();
             string outS = "#message " + to_string(convName.second) + " " + message -> getText() + "\n";
-            packet << outS;
             cout << "message = " << message -> getText() << " sent\n";//send req mess
-            socket.send(packet);
+            send(socket, outS);
             message -> setText("");   
         }
         if(event.type == sf::Event::MouseWheelScrolled){
-            if(chats.isMouseOver(*window))
+            if(chats.isMouseOver(*window) && !chats.isClear())
                 chats.updatePoses(event.mouseWheelScroll.delta);
-            if(msgs.isMouseOver(*window))
+            if(!msgs.isClear() && convName.second != -1 && msgs.isMouseOver(*window))
                 msgs.updatePoses(event.mouseWheelScroll.delta);
             cout << "delta = " << event.mouseWheelScroll.delta << "\n";
         }
@@ -279,14 +284,11 @@ public:
 			}
         if(event.type == sf::Event::MouseButtonPressed)
             if (btn -> isMouseOver(*window)) {
-                packet.clear();
                 string outS = "#register " + log -> getText() + " " + pass -> getText() + " " + message -> getText() + "\n";
-                packet << outS;
-                socket.send(packet);
+                send(socket, outS);
                 cout << outS << "\n";
-                packet.clear();
-                socket.receive(packet);
-                packet >> outS;
+                outS = "";
+                receive(socket, outS);
                 cout << "regback = " << outS << "\n";
                 resReg = stoi(outS);
                 log->setText(""); pass->setText(""); 
@@ -378,7 +380,7 @@ public:
 };
 
 int main(int argc, char ** argv){
-    sf::Socket::Status status = socket.connect("0", stoi(argv[1]));
+    sf::Socket::Status status = socket.connect("0.0.0.0", stoi(argv[1]));
     if (status != sf::Socket::Done){
         std::cout << "Didn't connect to server\n";
     }
