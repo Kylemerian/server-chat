@@ -1,10 +1,25 @@
 all: main
 
-main: client.o
-	g++ client.o -o messenger-app-client -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
+main: client.o sockets.o UIController.o UIMainPage.o UILogPage.o UIAuthPage.o FormSFML.h constants.hpp
+	g++ client.o sockets.o UIController.o UIMainPage.o UIAuthPage.o UILogPage.o -o messenger-app-client -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
 
-client.o: client.cpp FormSFML.h
+client.o: client.cpp
 	g++ -c client.cpp
+
+UIController.o: UIController.cpp UIController.hpp
+	g++ -c UIController.cpp
+
+UILogPage.o: UILogPage.cpp FormSFML.h UILogPage.hpp
+	g++ -c UILogPage.cpp
+
+UIAuthPage.o: UIAuthPage.cpp FormSFML.h UIAuthPage.hpp
+	g++ -c UIAuthPage.cpp
+
+UIMainPage.o: UIMainPage.cpp FormSFML.h UIMainPage.hpp
+	g++ -c UIMainPage.cpp	
+
+sockets.o: sockets.cpp sockets.hpp
+	g++ -c sockets.cpp
 
 clean:
 	rm -rf *.o

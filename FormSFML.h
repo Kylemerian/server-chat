@@ -1,5 +1,9 @@
+#ifndef FORMSFML_H
+#define FORMSFML_H
+
 #include <string>
 #include <SFML/Graphics.hpp>
+#include <iostream>
  
 using namespace std;
 
@@ -25,8 +29,7 @@ public:
         m_rect.setPosition(this->getPosition());
         txt.setFont(m_font);
         txt.setFillColor(sf::Color::White);
-        txt.setCharacterSize(25);
-        
+        txt.setCharacterSize(15);
     }
     bool isFocused(){
         return m_hasfocus;
@@ -78,6 +81,8 @@ public:
         if (e.text.unicode == 8){   // Delete key
             m_text = m_text.substr(0, m_text.size() - 1);
         }
+        else if(e.text.unicode == 13)
+            ;
         else if (m_text.size() < m_size){    
             m_text += e.text.unicode;
         }
@@ -85,7 +90,7 @@ public:
             txt.setString(hide());
         else
             txt.setString(m_text);
-        txt.setPosition({m_rect.getPosition().x + 5, m_rect.getPosition().y - 2});
+        txt.setPosition({m_rect.getPosition().x + 5, m_rect.getPosition().y + 5});
     }
     virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const{ 
         window -> draw(m_rect);
@@ -104,23 +109,23 @@ private:
 
 class Button {
 public:
-	Button(std::string btnText, sf::Vector2f buttonSize, int charSize, sf::Color bgColor, sf::Color textColor, int tPos, std::string btnSubText = "") {
-		button.setSize(buttonSize);
+	Button(std::string btnText, sf::Vector2f buttonSize, int charSize, sf::Color bgColor,
+        sf::Color textColor) {
+		
+        button.setSize(buttonSize);
 		button.setFillColor(bgColor);
 		btnWidth = buttonSize.x;
 		btnHeight = buttonSize.y;
-        textPoss = tPos;
         font.loadFromFile("ttf/None.ttf");
-        subText.setString(btnSubText);
-        subText.setCharacterSize(15);
-        subText.setFillColor(textColor);
-        subText.setFont(font);
 		text.setString(btnText);
 		text.setCharacterSize(charSize);
 		text.setFillColor(textColor);
         text.setFont(font);
         text.setStyle(sf::Text::Bold);
 	}
+    void setTexture(sf::Texture & tex){
+        button.setTexture(&tex);
+    }
     void setBold(){
         text.setStyle(sf::Text::Bold);
     }
@@ -162,27 +167,14 @@ public:
         float xPos;
         float yPos;
 		// Center text on button:
-		if(textPoss == CENTERED){
-            xPos = (point.x + btnWidth / 2) - (text.getLocalBounds().width / 2);
-		    yPos = (point.y + btnHeight / 2.2) - (text.getLocalBounds().height / 2);
-        }
-        else if(textPoss == UPPED){
-            xPos = (point.x + 15);
-		    yPos = (point.y + btnHeight / 4) - (text.getLocalBounds().height / 2);
-        }
-        else if(textPoss == DOWNED){
-            xPos = (point.x + 15);
-		    yPos = (point.y + btnHeight / 1.5) - (text.getLocalBounds().height / 2);
-        }
-        subText.setPosition((point.x + 15), (point.y + btnHeight / 1.5) - (subText.getLocalBounds().height / 2));
+        xPos = (point.x + btnWidth / 2) - (text.getLocalBounds().width / 2);
+		yPos = (point.y + btnHeight / 2.2) - (text.getLocalBounds().height / 2);
 		text.setPosition(xPos, yPos);
 	}
 
 	void drawTo(sf::RenderWindow &window) {
 		window.draw(button);
 		window.draw(text);
-        if(subText.getString() != "")
-            window.draw(subText);
 	}
 
 	// Check if the mouse is within the bounds of the button:
@@ -201,40 +193,114 @@ public:
 		}
 		return false;
 	}
-    string getText(){
-        return text.getString();
-    }
-private:
+protected:
 	sf::RectangleShape button;
 	sf::Text text;
-    sf::Text subText;
     sf::Font font;
 	int btnWidth;
 	int btnHeight;
-    int textPoss;
 };
 
-class Scroll{
-    std::vector<Button *> contents;
-    sf::RenderWindow * window;
-    sf::Color colors[2];
+class ChatBox : public Button{
+    sf::Text chatName;
+    int chat_id;
 public:
-    Scroll(sf::RenderWindow * wind, sf::Color focusColor, sf::Color unfocusColor):window(wind){
-        colors[0] = unfocusColor;
-        colors[1] = focusColor;
+    ChatBox(std::string btnText, sf::Vector2f buttonSize, int charSize, sf::Color bgColor,
+        sf::Color textColor, int chatid):Button(btnText, buttonSize, charSize, bgColor, textColor){
+        chatName.setString("smthing");
+		chatName.setCharacterSize(15);
+		chatName.setFillColor(sf::Color::White);
+        chatName.setFont(font);
+        chatName.setStyle(sf::Text::Bold);
+        chat_id = chatid;
     }
-    void addContent(Button * btn){
+    int getChatId(){
+        return chat_id;
+    }
+    string getSenderName(){
+        return text.getString();
+    }
+    void setPosition(sf::Vector2f point) {
+		button.setPosition(point);
+        float xPos1, xPos2;
+        float yPos1, yPos2;
+        xPos1 = 10;
+		yPos1 = (point.y + btnHeight / 1.5) - (text.getLocalBounds().height / 2);
+        xPos2 = 10;
+		yPos2 = (point.y + btnHeight / 3.7) - (chatName.getLocalBounds().height / 2);
+		text.setPosition(xPos2, yPos2);
+        chatName.setPosition(xPos1, yPos1);
+	}
+    void setChatName(std::string s){
+        chatName.setString(s);
+    }
+    void drawTo(sf::RenderWindow &window) {
+		window.draw(button);
+		window.draw(text);
+        window.draw(chatName);
+	}
+};
+
+class MessageBox : public Button{
+    sf::Text senderName;
+    int sender_id;
+    string time;
+public:
+    MessageBox(std::string btnText, sf::Vector2f buttonSize, int charSize, sf::Color bgColor,
+        sf::Color textColor, int senderid, string _time):Button(btnText, buttonSize, charSize, bgColor, textColor){
+        senderName.setString("smthing");
+		senderName.setCharacterSize(15);
+		senderName.setFillColor(sf::Color::White);
+        senderName.setFont(font);
+        senderName.setStyle(sf::Text::Bold);
+        text.setStyle(sf::Text::Regular);
+        sender_id = senderid;
+        time = _time;
+    }
+    int getSenderId(){
+        return sender_id;
+    }
+    void setPosition(sf::Vector2f point) {
+		button.setPosition(point);
+        float xPos1, xPos2;
+        float yPos1, yPos2;
+        xPos1 = 10 + button.getPosition().x;
+		yPos1 = (point.y + btnHeight / 1.5) - (text.getLocalBounds().height / 2);
+        xPos2 = 10 + button.getPosition().x;
+		yPos2 = (point.y + btnHeight / 3.7) - (senderName.getLocalBounds().height / 2);
+		text.setPosition(xPos1, yPos1);
+        senderName.setPosition(xPos2, yPos2);
+	}
+    void setSenderName(std::string s){
+        senderName.setString(s);
+    }
+    void drawTo(sf::RenderWindow &window) {
+		window.draw(button);
+		window.draw(text);
+        window.draw(senderName);
+	}
+};
+
+class ScrollChat{
+    std::vector<ChatBox *> contents;
+    sf::RenderWindow * window;
+public:
+    ScrollChat(sf::RenderWindow * wind, sf::Color focusColor, sf::Color unfocusColor):window(wind){
+    }
+    void addContent(ChatBox * btn){
         contents.push_back(btn);
     }
     void draw(sf::RenderWindow& window){
-        for(int i = 0; i < contents.size(); i++)
-            if (contents[i] -> isMouseOver(window))
-                contents[i] -> setBackColor(colors[1]);
-            else
-                contents[i] -> setBackColor(colors[0]);
         for(auto obj : contents){
             obj -> drawTo(window);
         }
+    }
+    void setFocus(){
+        for(auto obj : contents)
+            if(obj -> isMouseOver(*window))
+                obj -> setBackColor(sf::Color::Red);
+            else
+                obj -> setBackColor(sf::Color::Blue);
     }
     int amount(){
         return contents.size();
@@ -242,14 +308,22 @@ public:
     void clear(){
         contents.clear();
     }
-    string idClickedBox(){
-        for(auto c : contents)
-            if(c -> isMouseOver(*window))
-                return c->getText();
-        return "";
-    }
     int isClear(){
         return contents.size() == 0;
+    }
+    int getIdChat(){
+        for(auto obj : contents){
+            if(obj->isMouseOver(*window))
+                return obj->getChatId();
+        }
+        return -1;
+    }
+    string getNameChat(){
+        for(auto obj : contents){
+            if(obj->isMouseOver(*window))
+                return obj->getSenderName();
+        }
+        return "";
     }
     bool isMouseOver(sf::RenderWindow &window) {
 		int mouseX = sf::Mouse::getPosition(window).x;
@@ -283,43 +357,76 @@ public:
     }
 };
 
-vector<pair<string, string>> parseChats(string s){
-    vector<pair<string, string>> res;
-    string tmpName, tmpMess;
-    int flag = 0;
-    for(auto c : s){
-        if(c == '\n'){
-            res.push_back(make_pair(tmpName, tmpMess));
-            tmpName = "";
-            tmpMess = "";
-            flag = 0;
-        }
-        else{
-            if(c == ' ')
-                flag = 1;
-            else{
-                if(flag)
-                    tmpMess += c;
-                else
-                    tmpName += c;
-            }
-            
+class ScrollMessages{
+    std::vector<MessageBox *> contents;
+    sf::RenderWindow * window;
+public:
+    ScrollMessages(sf::RenderWindow * wind, sf::Color focusColor, sf::Color unfocusColor):window(wind){
+    }
+    void addContent(MessageBox * btn){
+        contents.push_back(btn);
+    }
+    void draw(sf::RenderWindow& window){
+        for(auto obj : contents){
+            obj -> drawTo(window);
         }
     }
-    return res;
-}
+    void setFocus(){
+        for(auto obj : contents)
+            if(obj -> isMouseOver(*window))
+                obj -> setBackColor(sf::Color::Red);
+            else
+                obj -> setBackColor(sf::Color::Blue);
+    }
+    float getLowerBounce(){
+        return contents[contents.size() - 1]->getPosition().y;
+    }
+    int amount(){
+        return contents.size();
+    }
+    void clear(){
+        contents.clear();
+    }
+    int isClear(){
+        return contents.size() == 0;
+    }
+    int getIdChat(){
+        for(auto obj : contents){
+            if(obj->isMouseOver(*window))
+                return obj->getSenderId();
+        }
+        return -1;
+    }
+    bool isMouseOver(sf::RenderWindow &window) {
+		int mouseX = sf::Mouse::getPosition(window).x;
+		int mouseY = sf::Mouse::getPosition(window).y;
+       
+        int btnPosX = contents[0] -> getPosition().x;
+        int btnPosY = contents[0] -> getPosition().y;
+        int btnxPosWidth = contents[contents.size() - 1] -> getPosition().x + contents[contents.size() - 1] -> getSize().x;
+        int btnyPosHeight = contents[contents.size() - 1] -> getPosition().y + contents[contents.size() - 1] -> getSize().y;
+        if (mouseX < btnxPosWidth && mouseX > btnPosX && mouseY < btnyPosHeight && mouseY > btnPosY) {
+            return true;
+        }
+        return false;
+	}
+    void updatePoses(float delta){
+        delta = - delta;
+        int btnPosY = contents[0] -> getPosition().y;
+        int btnyPosHeight = contents[contents.size() - 1] -> getPosition().y + contents[contents.size() - 1] -> getSize().y;
+        
+        if(btnPosY > 40 && btnyPosHeight < window -> getSize().y - 50)
+            delta = 0;
+        else if(btnyPosHeight*1.0f - window -> getSize().y - delta * 30 + 16 < -50){
+            delta = 0;
+        }
+        else if(btnPosY - delta * 30 > 768 /18 + 10){
+            delta = 0;
+        }
+        for(int i = 0; i < contents.size(); i++){
+            contents[i] -> setPosition({1.0f * contents[i]->getPosition().x, contents[i]->getPosition().y - delta*30});
+        }    
+    }
+};
 
-vector<string> parseMsgs(string s){
-    vector<string> res;
-    string tmp;
-    for(auto c : s){
-        if(c == '\n'){
-            res.push_back(tmp);
-            tmp = "";
-        }
-        else{
-            tmp += c;
-        }
-    }
-    return res;
-}
+#endif
