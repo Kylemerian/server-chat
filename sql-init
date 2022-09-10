@@ -1,23 +1,32 @@
 drop table if exists clients;
 drop table if exists messages;
 drop table if exists chats;
+drop table if exists chatmembers;
+
 create table clients(
 	client_id	serial,
-	nickname	varchar(80),
-	login		varchar(80),
-	password	varchar(80)
+	nickname	varchar(30),
+	login		varchar(30),
+	password	varchar(30)
 );
+
 create table messages(
 	message_id	serial,
 	sender_id	integer,
-	receiver_id		integer,
+	chat_id		integer,
 	time	timestamp,
-	message varchar(500)
+	message varchar(300),
+	s_deleted boolean,
+	r_deleted boolean
 );
 
 create table chats(
-	chat_id serial,
-	client_id_1 integer,
-	client_id_2 integer
+	chat_id integer,
+	chat_name varchar(60),
+	host_id integer
 );
 
+create table chatmembers(
+	chat_id integer,
+	client_id integer
+);
