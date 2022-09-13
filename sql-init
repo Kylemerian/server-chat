@@ -21,7 +21,7 @@ create table messages(
 );
 
 create table chats(
-	chat_id integer,
+	chat_id SERIAL,
 	chat_name varchar(60),
 	host_id integer
 );
