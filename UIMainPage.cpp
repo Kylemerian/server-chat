@@ -37,39 +37,12 @@ void UIMainPage::draw(){
     messageField.setPosition(HEIGHT * 0.31f, window -> getSize().y - 40);
     messageField.setSize(window -> getSize().x - 0.35f * HEIGHT, 30.0f);
     
-    vector <pair<int, string>> parsedChats; //temporary filled that way
-    parsedChats.push_back(std::make_pair(1, "chatname1"));
-    parsedChats.push_back(std::make_pair(3, "chatname3"));
-    parsedChats.push_back(std::make_pair(5, "chatname5"));
-    parsedChats.push_back(std::make_pair(1, "chatname1"));
-    parsedChats.push_back(std::make_pair(3, "chatname3"));
-    parsedChats.push_back(std::make_pair(5, "chatname5"));
-    parsedChats.push_back(std::make_pair(1, "chatname1"));
-    parsedChats.push_back(std::make_pair(3, "chatname3"));
-    parsedChats.push_back(std::make_pair(5, "chatname5"));
-    parsedChats.push_back(std::make_pair(1, "chatname1"));
-    parsedChats.push_back(std::make_pair(3, "chatname3"));
-    parsedChats.push_back(std::make_pair(5, "chatname5"));
-    vector<pair<pair<string, int>, pair<string, string>>> parsedMsgs;//temporary filled that way
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello1", "2000-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender2", 2), make_pair("Hello2", "2010-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello3", "2020-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender2", 2), make_pair("Hello4", "2030-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello5", "2040-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender2", 2), make_pair("Hello6", "2050-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender2", 2), make_pair("Hello7", "2060-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello8", "2070-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello9", "2080-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello1", "2000-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender2", 2), make_pair("Hello2", "2010-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello3", "2020-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender2", 2), make_pair("Hello4", "2030-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello5", "2040-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender2", 2), make_pair("Hello6", "2050-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender2", 2), make_pair("Hello7", "2060-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello8", "2070-10-10 00:01:02")));
-    parsedMsgs.push_back(make_pair(make_pair("Sender1", 1), make_pair("Hello9", "2080-10-10 00:01:02")));
+    vector <pair<int, string>> parsedChats;
+    vector <pair<pair<string, int>, pair<string, string>>> parsedMsgs;
+    if(currentChatId != -1)
+        parsedMsgs = getHistoryMessages(socket, currentChatId);
     if(chats.isClear()){
+        parsedChats = getHistoryChats(socket);
         for(int i = 0; i < parsedChats.size(); i++){
             ChatBox * tmp = new ChatBox(parsedChats[i].second, {HEIGHT * 0.3f - 5.0f, 65.0f}, 15, sf::Color(14, 22, 80),
                 sf::Color::White, parsedChats[i].first);
@@ -117,7 +90,7 @@ int UIMainPage::events(sf::Event event){
             cout << "click chat: " << chats.getIdChat() << "\n";//send req to open chat
             currentChatId = chats.getIdChat();
             if(currentChatId != -1)
-                interlocutor.setText(chats.getNameChat());
+                interlocutor.setText(setChatName(socket, chats.getIdChat()));
             msgs.clear();
         }
         if(logout.isMouseOver(*window)){
@@ -146,7 +119,7 @@ int UIMainPage::events(sf::Event event){
             tmp -> setSenderName("SENDERSFDSKFDSFDSFDLF");
             tmp -> setPosition({0.31f * HEIGHT, msgs.getLowerBounce() + 50});
             msgs.addContent(tmp);
-            string request = "#message " + to_string(currentChatId) + " " + messageField.getText() + "\n";
+            string request = "#message " + to_string(currentChatId) + " {" + messageField.getText() + "}\n";
             if(send(socket, request) != sf::Socket::Done)
                 cout << "cant send message to server\n";
             messageField.setText("");

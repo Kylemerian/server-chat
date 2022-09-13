@@ -298,9 +298,9 @@ public:
     void setFocus(){
         for(auto obj : contents)
             if(obj -> isMouseOver(*window))
-                obj -> setBackColor(sf::Color::Red);
+                obj -> setBackColor(sf::Color(22, 33, 44));
             else
-                obj -> setBackColor(sf::Color::Blue);
+                obj -> setBackColor(sf::Color(20, 30, 40));
     }
     int amount(){
         return contents.size();
@@ -374,9 +374,9 @@ public:
     void setFocus(){
         for(auto obj : contents)
             if(obj -> isMouseOver(*window))
-                obj -> setBackColor(sf::Color::Red);
+                obj -> setBackColor(sf::Color(22, 33, 44));
             else
-                obj -> setBackColor(sf::Color::Blue);
+                obj -> setBackColor(sf::Color(20, 30, 40));
     }
     float getLowerBounce(){
         return contents[contents.size() - 1]->getPosition().y;

@@ -16,8 +16,8 @@ class UIMainPage{
 public:
     UIMainPage(sf::RenderWindow * wind):
         window(wind),
-        msgs(wind, sf::Color::Black, sf::Color::Red),
-        chats(wind, sf::Color::Blue, sf::Color::Red),
+        msgs(wind, sf::Color::Black, sf::Color::Green),
+        chats(wind, sf::Color::Black, sf::Color::Green),
         messageField(500, window, false),
         logout("L", {30, 30}, 15, sf::Color::Blue, sf::Color::White),
         sendMessage("L", {30, 30}, 15, sf::Color::Blue, sf::Color::White),
