@@ -67,7 +67,7 @@ std::vector <std::string> Database::getHistoryMessages(std::string chat_id, std:
 std::vector <std::string> Database::getChats(int id){
     std::vector <std::string> res;    
     pqxx::work tr(conn);
-    pqxx::result r = tr.exec("select chatmembers.chat_id, chat_name "
+    pqxx::result r = tr.exec("select chatmembers.chat_id, chat_name, host_id "
         "from chatmembers join chats on chats.chat_id = chatmembers.chat_id "
         "where client_id = " + std::to_string(id) + ";");
     tr.commit();
@@ -79,18 +79,27 @@ std::vector <std::string> Database::getChats(int id){
 }
 void Database::createPrivChat(std::string chat_name, std::string client_1, std::string client_2){
     pqxx::work tr(conn);
-    pqxx::result r = tr.exec("insert into chats(chat_name) values (\'" +
-        chat_name + "\');");
+    pqxx::result r = tr.exec("insert into chats(chat_id, chat_name) values (" +
+        std::to_string(chatid) + ", \'" + chat_name + "\');");
     tr.commit();
     pqxx::work tr2(conn);
     pqxx::result r2 = tr2.exec("Insert into chatmembers(chat_id, client_id)"
-        " values(" + std::to_string(10) + ", " + client_1 + ");");
+        " values(" + std::to_string(chatid) + ", " + client_1 + ");");
     tr2.commit();
     pqxx::work tr3(conn);
     pqxx::result r3 = tr3.exec("Insert into chatmembers(chat_id, client_id)"
-        " values(" + std::to_string(10) + ", " + client_2 + ");");
+        " values(" + std::to_string(chatid) + ", " + client_2 + ");");
     tr3.commit();
+    chatid++;
 }
+
+std::string Database::chatinfo(std::string chat_id){
+    pqxx::work tr(conn);
+    pqxx::result r = tr.exec("select * from chats where chat_id = " + chat_id + ";");
+    tr.commit();
+    return r[0][1].c_str();
+}
+
 Database::~Database(){
 
     conn.close();

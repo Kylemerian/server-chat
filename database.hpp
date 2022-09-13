@@ -8,10 +8,14 @@
 #include <cstring>
 
 class Database{
+    int chatid;
 public:
     pqxx::connection conn;
-    
-    Database(): conn("user=postgres password=1 host=localhost port=5432 dbname=postgres"){}
+
+    Database(): conn("user=postgres password=1 host=localhost port=5432 dbname=postgres"){
+        std::cout << conn.is_open() << "\n";
+        chatid = 1;
+    }
 
     int authClient(std::string log, std::string pass);
 
@@ -24,6 +28,8 @@ public:
     std::vector <std::string> getChats(int id);
 
     void createPrivChat(std::string chat_name, std::string client_1, std::string client_2);
+
+    std::string chatinfo(std::string chat_id);
     
     ~Database();
 };

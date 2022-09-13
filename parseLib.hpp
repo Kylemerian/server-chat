@@ -10,8 +10,11 @@ enum{
     historyCode = 3,
     chatsCode = 4,
     createChatCode = 5,
+    chatInfoCode = 6,
     errorCode = -1
 };
+
+std::string parseMessage(std::vector<std::string> s);
 
 std::vector<std::string> getArgs(std::string s);
 

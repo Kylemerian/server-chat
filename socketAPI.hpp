@@ -15,6 +15,8 @@ void history(sf::TcpSocket& sock, Database &db, std::string chat_id, std::string
 
 void chats(sf::TcpSocket& sock, Database &db, int client_id);
 
-void createChat(sf::TcpSocket& sock, Database &db, std::vector<std::string>& args);
+void createChat(sf::TcpSocket& sock, Database &db, int client_id, std::vector<std::string>& args);
+
+void chatinfo(sf::TcpSocket& sock, Database &db, std::string chat_id);
 
 #endif

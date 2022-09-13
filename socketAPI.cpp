@@ -22,6 +22,7 @@ sf::Socket::Status receive(sf::TcpSocket& sock, std::string &s){
 int auth(sf::TcpSocket& sock, Database &db, std::string login, std::string password){
     int res = db.authClient(login , password);
     std::string response = "#auth " + std::to_string(res) + "\n";
+    std::cout << response << "\n";
     send(sock, response);
     return res;
 }
@@ -55,13 +56,19 @@ void chats(sf::TcpSocket& sock, Database &db, int client_id){
     send(sock, response);
 }
 
-void createChat(sf::TcpSocket& sock, Database &db, std::vector<std::string>& args){
-    int type = args.size() == 3;
-    if(type){
-        db.createPrivChat(args[1] + "_" + args[2], args[1], args[2]);
+void createChat(sf::TcpSocket& sock, Database &db, int client_id, std::vector<std::string>& args){
+    if(args.size() == 4){   
+        db.createPrivChat(std::to_string(client_id) + "_" + args[2], std::to_string(client_id), args[2]);
     }
     else{
-
+        std::cout << "public chat\n";
     }
     return;
+}
+
+void chatinfo(sf::TcpSocket& sock, Database &db, std::string chat_id){
+    std::string response = "#chatinfo ";
+    std::string chatname = db.chatinfo(chat_id);
+    response += (chatname + "\n");
+    send(sock, response);
 }

@@ -11,6 +11,7 @@ enum{
     historyCode = 3,
     chatsCode = 4,
     createChatCode = 5,
+    chatInfoCode = 6,
     errorCode = -1
 };
 
@@ -38,9 +39,18 @@ std::vector<std::string> getArgs(std::string s) {
     return v;
 }
 
+std::string parseMessage(std::vector<std::string> s){
+    std::string tmp = "";
+    for(int i = 2; i < s.size(); i++){
+        std::cout << i << " " << s[i] << "\n";
+        tmp = tmp + s[i] + " ";
+    }
+    return tmp.substr(1, tmp.size() - 3);
+}
+
 int requestIdentify(std::string request){
     std::vector <std::string> requests = {"#auth", "#register",
-        "#message", "#history", "#chats", "#createchat"};
+        "#message", "#history", "#chats", "#createchat", "#chatinfo"};
     
     std::string cmd = getFirstArg(request);
     for(int i = 0; i < requests.size(); i++){
@@ -68,7 +78,7 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, std::string reques
         break;
         
         case messageCode:
-            message(*(client -> first), db, client -> second, args[1], args[2]);
+            message(*(client -> first), db, client -> second, args[1], parseMessage(args));
         break;
         
         case historyCode:
@@ -80,7 +90,11 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, std::string reques
         break;
         
         case createChatCode:
-            createChat(*(client -> first), db, args);
+            createChat(*(client -> first), db, client -> second, args);
+        break;
+
+        case chatInfoCode:
+            chatinfo(*(client -> first), db, args[1]);
         break;
 
         case errorCode:

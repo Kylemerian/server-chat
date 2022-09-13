@@ -9,7 +9,18 @@
 #include "socketAPI.hpp"
 #include "parseLib.hpp"
  
+std::vector<std::string> cmds = {
+    "#auth \"login\" \"pass\"\n",
+    "#register \"nick\" \"login\" \"pass\"\n",
+    "#message \"chat_id\" {message}\n",
+    "#history \"chat_id\" \"base\" \"offset\"\n",
+    "#chats\n",
+    "#createchat \"name\" \"id1\" \"id2\"\n"
+};
+
 int main(int argc, char ** argv){
+    for(auto cmd : cmds)
+        std::cout << cmd;
     Database db;
     sf::TcpListener listener;
     listener.listen(std::stoi(argv[1]), "0.0.0.0");
