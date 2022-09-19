@@ -15,7 +15,7 @@ std::vector<std::string> cmds = {
     "#message \"chat_id\" {message}\n",
     "#history \"chat_id\"\n",
     "#chats\n",
-    "#createchat \"name\" \"id1\" \"id2\"\n"
+    "#createchat \"name\" \"id2\"\n"
 };
 
 int main(int argc, char ** argv){
