@@ -25,7 +25,7 @@ public:
     
     std::vector <std::string> getChats(int id);
 
-    void createPrivChat(std::string chat_name, std::string client_1, std::string client_2);
+    std::vector <std::string> createPrivChat(std::string chat_name, std::string client_1, std::string client_2);
 
     std::string chatinfo(std::string chat_id);
     

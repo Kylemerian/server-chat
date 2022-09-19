@@ -82,7 +82,11 @@ std::vector <std::string> Database::getChats(int id){
     }
     return res;
 }
-void Database::createPrivChat(std::string chat_name, std::string client_1, std::string client_2){
+std::vector <std::string> Database::createPrivChat(
+    std::string chat_name,
+    std::string client_1,
+    std::string client_2)
+{
     pqxx::work tr1(conn);
     pqxx::result r1 = tr1.exec("insert into chats(chat_name) values (\'" + chat_name + "\');");
     tr1.commit();
@@ -98,6 +102,12 @@ void Database::createPrivChat(std::string chat_name, std::string client_1, std::
     pqxx::result r3 = tr3.exec("Insert into chatmembers(chat_id, client_id)"
         " values(" + std::to_string(chatid) + ", " + client_2 + ");");
     tr3.commit();
+
+    std::vector <std::string> chat_keys;
+    chat_keys.push_back(std::to_string(chatid));
+    chat_keys.push_back(chat_name);
+    chat_keys.push_back(client_2);
+    return chat_keys;
 }
 
 std::string Database::chatinfo(std::string chat_id){
