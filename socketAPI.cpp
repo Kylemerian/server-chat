@@ -76,7 +76,7 @@ void createChat(sf::TcpSocket& sock, Database &db, int client_id, std::vector<st
         db.createPrivChat(std::to_string(client_id) + "_" + args[2], std::to_string(client_id), args[2]);
     }
     else{
-        std::cout << "public chat\n";
+        db.createPublicChat(std::to_string(client_id), args[1], args);
     }
     return;
 }
