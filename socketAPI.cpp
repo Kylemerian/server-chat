@@ -72,7 +72,7 @@ void chats(sf::TcpSocket& sock, Database &db, int client_id){
 }
 
 void createChat(sf::TcpSocket& sock, Database &db, int client_id, std::vector<std::string>& args){
-    if(args.size() == 3){   
+    if(args.size() == 4){ // 0:#createchat 1:name 2:id 3:end
         db.createPrivChat(std::to_string(client_id) + "_" + args[2], std::to_string(client_id), args[2]);
     }
     else{
