@@ -42,10 +42,9 @@ std::vector<std::string> getArgs(std::string s) {
 std::string parseMessage(std::vector<std::string> s){
     std::string tmp = "";
     for(int i = 2; i < s.size(); i++){
-        std::cout << i << " " << s[i] << "\n";
         tmp = tmp + s[i] + " ";
     }
-    return tmp.substr(1, tmp.size() - 3);
+    return tmp.substr(1, tmp.size() - 4);
 }
 
 int requestIdentify(std::string request){
@@ -61,7 +60,12 @@ int requestIdentify(std::string request){
     return -1;
 }
 
-void requestHandler(std::pair<sf::TcpSocket *, int> * client, std::string request, Database &db){
+void requestHandler(
+    std::pair<sf::TcpSocket *, int> * client,
+    std::string request,
+    Database &db,
+    std::vector<std::pair<sf::TcpSocket *, int>> &clients)
+{
     int res;
     int reqCode = requestIdentify(request);
     std::string outS;
@@ -78,11 +82,17 @@ void requestHandler(std::pair<sf::TcpSocket *, int> * client, std::string reques
         break;
         
         case messageCode:
-            message(*(client -> first), db, client -> second, args[1], parseMessage(args));
+            message(
+		*(client -> first),
+	       	db,
+	       	client -> second,
+	       	args[1],
+	       	parseMessage(args),
+		clients);
         break;
         
         case historyCode:
-            history(*(client -> first), db, args[1], args[2], args[3]);
+            history(*(client -> first), db, args[1]);
         break;
         
         case chatsCode:
