@@ -9,9 +9,9 @@ int auth(sf::TcpSocket& sock, Database &db, std::string login, std::string passw
 
 void registration(sf::TcpSocket& sock, Database &db, std::string nick, std::string login, std::string password);
 
-void message(sf::TcpSocket& sock, Database &db, int sender_id, std::string receiver_id, std::string message);
+void message(sf::TcpSocket& sock, Database &db, int sender_id, std::string receiver_id, std::string message, std::vector<std::pair<sf::TcpSocket *, int>> &clients);
 
-void history(sf::TcpSocket& sock, Database &db, std::string chat_id, std::string fMessage, std::string lMessage);
+void history(sf::TcpSocket& sock, Database &db, std::string chat_id);
 
 void chats(sf::TcpSocket& sock, Database &db, int client_id);
 

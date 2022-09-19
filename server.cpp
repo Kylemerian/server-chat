@@ -13,7 +13,7 @@ std::vector<std::string> cmds = {
     "#auth \"login\" \"pass\"\n",
     "#register \"nick\" \"login\" \"pass\"\n",
     "#message \"chat_id\" {message}\n",
-    "#history \"chat_id\" \"base\" \"offset\"\n",
+    "#history \"chat_id\"\n",
     "#chats\n",
     "#createchat \"name\" \"id1\" \"id2\"\n"
 };
@@ -45,7 +45,7 @@ int main(int argc, char ** argv){
                     if (selector.isReady(client)){
                         std::string request;
                         if (receive(client, request) == sf::Socket::Done){
-                            requestHandler(&clients[i], request, db);
+                            requestHandler(&clients[i], request, db, clients);
                         }
                     }
                 }

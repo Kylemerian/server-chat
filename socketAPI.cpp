@@ -33,16 +33,31 @@ void registration(sf::TcpSocket& sock, Database &db, std::string nick, std::stri
     send(sock, response);
 }
 
-void message(sf::TcpSocket& sock, Database &db, int sender_id, std::string receiver_id, std::string message){
-    int res = db.message(sender_id, receiver_id, message);
-    //TODO push notification to receiver_id
+void message(
+    sf::TcpSocket& sock,
+    Database &db,
+    int sender_id,
+    std::string receiver_id,
+    std::string message,
+    std::vector<std::pair<sf::TcpSocket *, int>> &clients)
+{
+    std::string msg = "#incomingMessage " +  db.message(sender_id, receiver_id, message) + "\n";
+    std::vector <int> chatmembers = db.chatmembers(receiver_id);
+    for (int i = 0; i < chatmembers.size(); ++i) {
+        for (int j = 0; j < clients.size(); ++j) {
+	    if (clients[j].second == chatmembers[i] && clients[j].second != sender_id) {
+	        send(*(clients[j].first), msg);
+	    }
+	}
+    }
 }
 
-void history(sf::TcpSocket& sock, Database &db, std::string chat_id, std::string fMessage, std::string lMessage){
+void history(sf::TcpSocket& sock, Database &db, std::string chat_id){
     std::string response = "#history ";
-    std::vector <std::string> res = db.getHistoryMessages(chat_id, fMessage, lMessage);
-    for(int i = 0; i < res.size(); i++)
+    std::vector <std::string> res = db.getHistoryMessages(chat_id);
+    for(int i = 0; i < res.size(); i++) {
         response += res[i];
+    }
     response[response.size() - 1] = '\n';
     send(sock, response);
 }

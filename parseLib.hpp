@@ -20,7 +20,11 @@ std::vector<std::string> getArgs(std::string s);
 
 std::string getFirstArg(std::string s);
 
-void requestHandler(std::pair<sf::TcpSocket *, int> * client, std::string request, Database &db);
+void requestHandler(
+    std::pair<sf::TcpSocket *, int> * client,
+    std::string request,
+    Database &db,
+    std::vector<std::pair<sf::TcpSocket *, int>> & clients);
 
 int requestIdentify(std::string request);
 

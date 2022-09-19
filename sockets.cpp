@@ -43,6 +43,7 @@ std::string setChatName(sf::TcpSocket& sock, int chatId){
 }
 
 std::vector<pair<int, string>> getHistoryChats(sf::TcpSocket& sock){
+    std::cout << "cheking" << endl;
     std::vector<pair<int, string>> res;
     string request = "#chats\n";
     send(sock, request);
