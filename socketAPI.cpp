@@ -78,19 +78,19 @@ void createChat(
     std::vector<std::string>& args,
     std::vector<std::pair<sf::TcpSocket *, int>> &clients)
 {
-    if(args.size() == 3){   
+    if(args.size() == 4){   
         std::vector <std::string> chat_keys = db.createPrivChat(std::to_string(client_id) + "_" + args[2], std::to_string(client_id), args[2]);
-	int receiver = std::stoi(chat_keys[2]);
-	std::string msg = "#incomingChat " + chat_keys[0] + " " + chat_keys[1] + "-1";
+	      int receiver = std::stoi(chat_keys[2]);
+	      std::string msg = "#incomingChat " + chat_keys[0] + " " + chat_keys[1] + "-1";
         for (int j = 0; j < clients.size(); ++j) {
-	    if (clients[j].second == receiver) {
-	        send(*(clients[j].first), msg);
-		break;
-	    }
-	}
+	        if (clients[j].second == receiver) {
+	          send(*(clients[j].first), msg);
+		        break;
+	        }
+	      }
     }
     else{
-        std::cout << "public chat\n";
+        db.createPublicChat(std::to_string(client_id), args[1], args);
     }
     return;
 }
