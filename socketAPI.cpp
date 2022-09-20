@@ -96,7 +96,7 @@ void createChat(
 }
 
 void lastmessage(sf::TcpSocket& sock, Database &db, std::string chat_id) {
-    std::string msg = db.lastmessage(chat_id);
+    std::string msg = "#lastmessage" + db.lastmessage(chat_id);
     send(sock, msg);
 }
 
