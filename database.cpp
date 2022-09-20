@@ -128,6 +128,20 @@ std::vector <int> Database::chatmembers(std::string chat_id) {
     return res;
 }
 
+std::string Database::lastmessage(std::string chat_id) {
+    pqxx::work tr(conn);
+    pqxx::result r = tr.exec("select sender_id, message, time from messages order by message_id desc limit 1");
+    tr.commit();
+    pqxx::work tr2(conn);
+    std::string client_id = std::string(r[0][0].c_str());
+    pqxx::result nicknameResult = tr2.exec("select nickname from clients where client_id = " + client_id + ";");
+    std::string nickname = std::string(nicknameResult[0][0].c_str());
+    std::string text = std::string(r[0][1].c_str());
+    std::string date = std::string(r[0][2].c_str());
+    std::string msg = chat_id + " " + nickname + " " + client_id + " {" + text + "} " + date + "\n";
+    return msg;
+}
+
 Database::~Database(){
 
     conn.close();

@@ -12,6 +12,7 @@ enum{
     chatsCode = 4,
     createChatCode = 5,
     chatInfoCode = 6,
+    lastMessageCode = 7,
     errorCode = -1
 };
 
@@ -49,7 +50,7 @@ std::string parseMessage(std::vector<std::string> s){
 
 int requestIdentify(std::string request){
     std::vector <std::string> requests = {"#auth", "#register",
-        "#message", "#history", "#chats", "#createchat", "#chatinfo"};
+        "#message", "#history", "#chats", "#createchat", "#chatinfo", "#lastmessage"};
     
     std::string cmd = getFirstArg(request);
     for(int i = 0; i < requests.size(); i++){
@@ -106,6 +107,10 @@ void requestHandler(
         case chatInfoCode:
             chatinfo(*(client -> first), db, args[1]);
         break;
+
+	case lastMessageCode:
+	    lastmessage(*(client -> first), db, args[1]);
+	break;
 
         case errorCode:
             return;
