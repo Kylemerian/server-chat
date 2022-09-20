@@ -128,6 +128,19 @@ std::vector <int> Database::chatmembers(std::string chat_id) {
     return res;
 }
 
+std::string Database::lastmessage(std::string chat_id) {
+    pqxx::work tr(conn);
+    pqxx::result r = tr.exec("select sender_id, message, time from messages order by message_id desc limit 1");
+    tr.commit();
+    pqxx::work tr2(conn);
+    std::string client_id = std::string(r[0][0].c_str());
+    pqxx::result nicknameResult = tr2.exec("select nickname from clients where client_id = " + client_id + ";");
+    std::string nickname = std::string(nicknameResult[0][0].c_str());
+    std::string text = std::string(r[0][1].c_str());
+    std::string date = std::string(r[0][2].c_str());
+    std::string msg = chat_id + " " + nickname + " " + client_id + " {" + text + "} " + date + "\n";
+    return msg;
+
 void Database::createPublicChat(std::string host_id, std::string chat_name, std::vector<std::string> members){
     pqxx::work tr1(conn);
     pqxx::result r1 = tr1.exec("insert into chats(chat_name, host_id) values (\'" + chat_name + "\', " + host_id + ");");

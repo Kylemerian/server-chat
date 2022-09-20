@@ -32,6 +32,8 @@ public:
     std::string chatinfo(std::string chat_id);
     
     std::vector <int> chatmembers(std::string chat_id);
+
+    std::string lastmessage(std::string chat_id);
     
     ~Database();
 };
