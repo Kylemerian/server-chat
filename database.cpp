@@ -140,6 +140,7 @@ std::string Database::lastmessage(std::string chat_id) {
     std::string date = std::string(r[0][2].c_str());
     std::string msg = chat_id + " " + nickname + " " + client_id + " {" + text + "} " + date + "\n";
     return msg;
+}
 
 void Database::createPublicChat(std::string host_id, std::string chat_name, std::vector<std::string> members){
     pqxx::work tr1(conn);
@@ -158,6 +159,5 @@ void Database::createPublicChat(std::string host_id, std::string chat_name, std:
 }
 
 Database::~Database(){
-
     conn.close();
 }
