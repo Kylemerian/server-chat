@@ -140,6 +140,21 @@ std::string Database::lastmessage(std::string chat_id) {
     std::string date = std::string(r[0][2].c_str());
     std::string msg = chat_id + " " + nickname + " " + client_id + " {" + text + "} " + date + "\n";
     return msg;
+
+void Database::createPublicChat(std::string host_id, std::string chat_name, std::vector<std::string> members){
+    pqxx::work tr1(conn);
+    pqxx::result r1 = tr1.exec("insert into chats(chat_name, host_id) values (\'" + chat_name + "\', " + host_id + ");");
+    tr1.commit();
+    pqxx::work tr0(conn);
+    pqxx::result r0 = tr0.exec("select currval(pg_get_serial_sequence('chats', 'chat_id'));");
+    tr0.commit();
+    int chatid = std::stoi(r0[0][0].c_str());
+    for(int i = 2; i < members.size() - 1; i++){
+        pqxx::work tr2(conn);
+        pqxx::result r2 = tr2.exec("Insert into chatmembers(chat_id, client_id)"
+            " values(" + std::to_string(chatid) + ", " + members[i] + ");");
+        tr2.commit();
+    }
 }
 
 Database::~Database(){
