@@ -100,7 +100,7 @@ void requestHandler(
         break;
         
         case createChatCode:
-            createChat(*(client -> first), db, client -> second, args);
+            createChat(*(client -> first), db, client -> second, args, clients);
         break;
 
         case chatInfoCode:
