@@ -1,10 +1,10 @@
 all: main
 
 main: server.o database.o socketAPI.o parseLib.o
-	g++ server.o socketAPI.o database.o parseLib.o -o messenger-app-server -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network -lpqxx -lpq -std=c++17
+	g++ server.o socketAPI.o database.o parseLib.o -o messenger-app-server -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network -lpqxx -lpq -std=c++2a
 
 server.o: server.cpp
-	g++ -c server.cpp -std=c++17
+	g++ -c server.cpp -std=c++2a
 
 socketAPI.o: socketAPI.cpp socketAPI.hpp
 	g++ -c socketAPI.cpp -std=c++17

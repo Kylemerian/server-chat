@@ -8,7 +8,8 @@
 #include "database.hpp"
 #include "socketAPI.hpp"
 #include "parseLib.hpp"
- 
+#include <set>
+
 std::vector<std::string> cmds = {
     "#auth \"login\" \"pass\"\n",
     "#register \"nick\" \"login\" \"pass\"\n",
@@ -40,15 +41,49 @@ int main(int argc, char ** argv){
                     delete client;
             }
             else{
+		std::cout << "--------------------------\n";
+		std::cout << "client.size() = " << clients.size() << "\n";
+		std::cout << "Discon = " << sf::Socket::Status::Disconnected << "\n";
+                std::set <std::pair<sf::TcpSocket *, int>> disconnectedClients;
+                for (int i = 0; i < clients.size(); i++){
+		    clients[i].first->setBlocking(false);
+		    char s[] = "#ping\n";
+		    if(clients[i].first->send(s, 7) == 3){
+			selector.remove(*(clients[i].first));
+			disconnectedClients.insert(clients[i]);
+		    }
+		    else
+			clients[i].first->setBlocking(true);
+		}
+		std::cout << clients.size() << " SDDDDDDDDDDDD\n"; 
+                while(!disconnectedClients.empty()){
+		    for(auto it = clients.begin(); it != clients.end(); it++)
+		        if(disconnectedClients.contains(*it)){
+			    std::cout << "before delete cli; size =" << disconnectedClients.size() <<  "\n";
+			    disconnectedClients.erase(disconnectedClients.find(*it));
+			    std::cout << "after cli; size =" << disconnectedClients.size() <<  "\n";
+			    clients.erase(it);
+			    break;
+			}
+		        
+		    std::cout << "HERE " << disconnectedClients.size() << "\n";
+		}
+		std::cout << "client.size() = " << clients.size() << "\n";
+		        
+
                 for (int i = 0; i < clients.size(); i++){
                     sf::TcpSocket& client = *(clients[i].first);
                     if (selector.isReady(client)){
-                        std::string request;
-                        if (receive(client, request) == sf::Socket::Done){
-                            requestHandler(&clients[i], request, db, clients);
-                        }
+                        std::string data;
+                        if (receive(client, data) == sf::Socket::Done){
+			    std::vector <std::string> requests = getRequestsFrom(data);
+			    for (auto x: requests) {
+			    	requestHandler(&clients[i], x, db, clients);
+                            }
+			}
                     }
                 }
+		std::cout << "--------------------------\n";
             }
         }
 //  }
